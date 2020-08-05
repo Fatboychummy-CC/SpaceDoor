@@ -98,11 +98,14 @@ local function ForEach(t, f)
   end
 end
 
+local tSides = {"north", "east", "south", "west", n = 4}
 local function Integrators(b)
   expect(1, b, "boolean")
 
   ForEach(tIntegrators, function(Integrator)
-    Integrator.setOutput("bottom", b)
+    ForEach(tSides, function(side)
+      Integrator.setOutput(side, b)
+    end)
   end)
 end
 
