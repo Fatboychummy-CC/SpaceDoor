@@ -267,10 +267,10 @@ end
 
 local function Open()
   Monitors("Opened", true)
-  Integrators(false)
+  Integrators(true)
   sleep(3)
   Monitors("Closed", true)
-  Integrators(true)
+  Integrators(false)
 end
 
 local function Unlocking(Level)
@@ -306,6 +306,7 @@ end
 local function Main()
   DefineSettings()
   Monitors("Closed")
+  Integrators(false)
   local tLevels = {settings.get("door.level1"), settings.get("door.level2")}
   while true do
     local tEvent = table.pack(os.pullEvent())
