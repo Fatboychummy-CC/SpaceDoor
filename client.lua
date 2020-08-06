@@ -56,6 +56,9 @@ end
 local tIntegrators = GetPeripherals("redstone_integrator")
 local tMonitors, tMonNames = GetPeripherals("monitor")
 local Manip = peripheral.find("manipulator") -- only one is needed.
+local nLockdownChannel = 350
+local bLockDown = false
+local nLockMin = 0
 
 -- [[ Functions ]] --
 local function DefineSettings()
@@ -152,6 +155,12 @@ local function Monitors(sState, bUpdateStateOnly, ei)
         monitor.clear()
         sId = tostring(ei)
         sName = "System Error"
+      elseif sState == "Lockdown" or bLockDown then
+        monitor.setBackgroundColor(colors.black)
+        monitor.setTextColor(colors.red)
+        monitor.clear()
+        sId = "X"
+        sName = "LOCKDOWN"
       else
         if i == 1 then
           sId   = sId1
@@ -188,7 +197,7 @@ local function Monitors(sState, bUpdateStateOnly, ei)
     ForEach(tMonitors, StateFunc(colors.red))
   elseif sState == "Opened" then
     ForEach(tMonitors, StateFunc(colors.green))
-  elseif sState == "Errored" then
+  elseif sState == "Errored" or sState == "Lockdown" then
     ForEach(tMonitors, StateFunc(colors.gray))
   end
 end
@@ -256,7 +265,8 @@ local function CheckEntities(Level)
   print("Entry check:")
   for i = 1, #tEntities do
     print(" ", tEntities[i].id, "?")
-    if RetrieveUUIDClearance(tEntities[i].id) >= Level then
+    local DetectedLevel = RetrieveUUIDClearance(tEntities[i].id)
+    if (bLockDown and DetectedLevel >= nLockMin) or (not bLockDown and DetectedLevel >= Level) then
       print("    Allowed.")
       return true
     end
@@ -307,6 +317,7 @@ local function Main()
   DefineSettings()
   Monitors("Closed")
   Integrators(false)
+  peripheral.call("left", "open", nLockdownChannel)
   local tLevels = {settings.get("door.level1"), settings.get("door.level2")}
   while true do
     local tEvent = table.pack(os.pullEvent())
@@ -315,6 +326,28 @@ local function Main()
         local name = tMonNames[i]
         if name == tEvent[2] then
           Unlocking(tLevels[i])
+        end
+      end
+    elseif tEvent[1] == "modem_message" and tEvent[2] == "left" then
+      local fRec, _, message = table.unpack(tEvent, 3, tEvent.n)
+      if fRec == nLockdownChannel and type(message) == "table" then
+        if message.type == "LOCKDOWN" then
+          if message.status then
+            -- lockdown
+            bLockDown = true
+            nLockMin = type(message.bypass) == "number" and message.bypass or 999
+            Monitors("Lockdown")
+            print("LOCKDOWN LOCKDOWN")
+            print("  MINIMUM CLEARANCE:", nLockMin)
+          else
+            -- no lockdown
+            if bLockDown then
+              print("Lockdown ended.")
+            end
+            bLockDown = false
+            nLockMin = 0
+            Monitors("Closed")
+          end
         end
       end
     end
