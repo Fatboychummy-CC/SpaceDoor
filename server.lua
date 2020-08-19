@@ -171,9 +171,20 @@ local function Action(command)
   end
 
   local actions = {}
-  function actions.rebootDoors()
-    rebootAll()
-    CommandResult(command, {status = "ok", output = string.format("%d computers rebooted.", select('#', peripheral.find("computer")))})
+  function actions.reboot(thing)
+    if not thing then
+      for i = 3, 0, -1 do
+        CommandResult(command, {status = "ok", output = string.format("Rebooting in %d...", i)})
+        os.sleep(1)
+      end
+      os.reboot()
+    end
+    if thing == "doors" then
+      rebootAll()
+      CommandResult(command, {status = "ok", output = string.format("%d computers rebooted.", select('#', peripheral.find("computer")))})
+    else
+      CommandResult(command, {status = "no-subcommand", subcommand = thing})
+    end
   end
   function actions.clear()
     printWindow.clear()
@@ -265,6 +276,11 @@ local function Action(command)
         "Usage: lockdown deactivate"
       }
       return
+     elseif com == "reboot" then
+      CommandPrint {
+        "Usage: reboot",
+        "Usage: reboot doors"
+      }
     end
     CommandResult(command, {status = "error", error = string.format("No help records for %s.", com)})
   end
