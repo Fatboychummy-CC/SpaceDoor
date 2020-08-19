@@ -281,6 +281,7 @@ local function Action(command)
         "Usage: reboot",
         "Usage: reboot doors"
       }
+      return
     end
     CommandResult(command, {status = "error", error = string.format("No help records for %s.", com)})
   end
