@@ -155,6 +155,13 @@ local function UpdateRecord(uuid, level)
   SaveRecords()
 end
 
+local function rebootAll()
+  for i, computer in ipairs(table.pack(peripheral.find("computer"))) do
+    computer.shutdown()
+    computer.turnOn()
+  end
+end
+
 local function Action(command)
   expect(1, command, "string")
 
@@ -164,6 +171,10 @@ local function Action(command)
   end
 
   local actions = {}
+  function actions.rebootDoors()
+    rebootAll()
+    CommandResult(command, {status = "ok", output = string.format("%d computers rebooted.", select('#', peripheral.find("computer")))})
+  end
   function actions.clear()
     printWindow.clear()
     printWindow.setCursorPos(1, 1)
@@ -281,6 +292,7 @@ end
 local function Main()
   DefineSettings()
   tClearances = LoadRecords()
+  rebootAll()
   redrawScreen()
   parallel.waitForAny(
     function() -- Transmission
